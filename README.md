@@ -31,12 +31,33 @@ File Indexer is a local-first application. Indexed paths and preferences are sto
 
 ## Installation
 
-Prebuilt `.deb` packages are published manually in the [GitHub Releases](../../releases) section. They are intentionally not committed to this source repository.
+Prebuilt `.deb` and `.rpm` packages are published manually in the [GitHub Releases](../../releases) section. They are intentionally not committed to this source repository.
+
+For each release, upload the packages matching the target architecture:
+
+| Package | Architecture | Example |
+|---|---|---|
+| Debian package | amd64 | `File Indexer_0.8.0_amd64.deb` |
+| RPM package | x86_64 | `File Indexer-0.8.0-1.x86_64.rpm` |
+
+ARM64 packages, when available, should be uploaded with an explicit `arm64` or `aarch64` suffix. The source archive can also be attached to a Release:
+
+```text
+File-Indexer-v0.8.0-source.zip
+```
+
+The source archive contains the application source only; generated dependencies, build directories, and binary packages are excluded.
 
 Download the package matching your architecture, then install it on Debian or Ubuntu:
 
 ```bash
 sudo apt install ./File-Indexer_<version>_amd64.deb
+```
+
+For RPM-based distributions:
+
+```bash
+sudo dnf install ./File-Indexer-<version>-1.x86_64.rpm
 ```
 
 ## Development
