@@ -11,7 +11,9 @@ use walkdir::WalkDir;
 use std::os::unix::fs::MetadataExt;
 
 const MAX_RESULTS: usize = 200;
+const MAX_CONFIGURED_RESULTS: usize = 2_000;
 const MAX_HISTORY: usize = 12;
+const ALL_INDEXES: &str = "__all_indexes__";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct FileEntry {
@@ -138,6 +140,24 @@ fn remember_folder(app: &AppHandle, folder: &str) -> Result<(), String> {
     let path = history_path(app)?;
     let content = serde_json::to_string_pretty(&history).map_err(|error| format!("Impossible d’enregistrer l’historique : {error}"))?;
     fs::write(path, content).map_err(|error| format!("Impossible d’enregistrer l’historique : {error}"))
+}
+
+#[tauri::command]
+fn delete_indexed_folder(app: AppHandle, folder: String) -> Result<(), String> {
+    let target = index_path(&app, &folder)?;
+    if target.exists() {
+        fs::remove_file(target).map_err(|error| format!("Impossible de supprimer l’index : {error}"))?;
+    }
+    let mut history = read_history(&app)?;
+    history.retain(|item| item != &folder);
+    fs::write(
+        history_path(&app)?,
+        serde_json::to_string_pretty(&history).map_err(|error| format!("Historique invalide : {error}"))?,
+    ).map_err(|error| format!("Impossible de mettre à jour l’historique : {error}"))?;
+    let mut favorites = read_favorites(&app)?;
+    favorites.retain(|item| item != &folder);
+    write_favorites(&app, &favorites)?;
+    Ok(())
 }
 
 fn count_index(path: &Path) -> Result<usize, String> {
@@ -410,35 +430,57 @@ fn normalize_search(value: &str, ignore_special: bool) -> String {
     }
 }
 
-#[tauri::command]
-fn search_files(app: AppHandle, folder: String, query: String, show_hidden: bool, display_mode: String, ignore_special: bool) -> Result<SearchResponse, String> {
-    let target = index_path(&app, &folder)?;
-    let file = File::open(target).map_err(|error| format!("Index introuvable, veuillez réindexer le dossier : {error}"))?;
-    let normalized_query = normalize_search(query.trim(), ignore_special);
-    let mut files = Vec::new();
-    let mut total = 0;
-
+fn search_index(
+    path: &Path,
+    normalized_query: &str,
+    show_hidden: bool,
+    display_mode: &str,
+    ignore_special: bool,
+    max_results: usize,
+    files: &mut Vec<FileEntry>,
+    total: &mut usize,
+) -> Result<(), String> {
+    let file = File::open(path).map_err(|error| format!("Impossible de lire l’index : {error}"))?;
     for line in BufReader::new(file).lines() {
         let line = line.map_err(|error| format!("Impossible de lire l’index : {error}"))?;
         let entry: FileEntry = serde_json::from_str(&line).map_err(|error| format!("Index invalide : {error}"))?;
         let hidden = Path::new(&entry.name).file_name().and_then(|name| name.to_str()).is_some_and(|name| name.starts_with('.'));
-        let matches_type = match display_mode.as_str() {
+        let matches_type = match display_mode {
             "directories" => entry.is_dir,
             "files" => !entry.is_dir,
             _ => true,
         };
         let matches = (show_hidden || !hidden) && matches_type;
-        let matches = matches && (normalized_query.is_empty() || normalize_search(&entry.name, ignore_special).contains(&normalized_query) || normalize_search(&entry.extension, ignore_special).contains(&normalized_query));
+        let matches = matches && (normalized_query.is_empty() || normalize_search(&entry.name, ignore_special).contains(normalized_query) || normalize_search(&entry.extension, ignore_special).contains(normalized_query));
         if !matches {
             continue;
         }
-        total += 1;
-        if files.len() < MAX_RESULTS {
+        *total += 1;
+        if files.len() < max_results {
             files.push(entry);
         }
     }
+    Ok(())
+}
 
-    Ok(SearchResponse { files, total, limited: total > MAX_RESULTS })
+#[tauri::command]
+fn search_files(app: AppHandle, folder: String, query: String, show_hidden: bool, display_mode: String, ignore_special: bool, max_results: usize) -> Result<SearchResponse, String> {
+    let max_results = max_results.clamp(MAX_RESULTS, MAX_CONFIGURED_RESULTS);
+    let normalized_query = normalize_search(query.trim(), ignore_special);
+    let mut files = Vec::new();
+    let mut total = 0;
+    let folders = if folder == ALL_INDEXES { read_history(&app)? } else { vec![folder] };
+    if folders.is_empty() {
+        return Ok(SearchResponse { files, total: 0, limited: false });
+    }
+    for indexed_folder in folders {
+        let target = index_path(&app, &indexed_folder)?;
+        if target.exists() {
+            search_index(&target, &normalized_query, show_hidden, &display_mode, ignore_special, max_results, &mut files, &mut total)?;
+        }
+    }
+
+    Ok(SearchResponse { files, total, limited: total > max_results })
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -446,7 +488,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![list_recent_folders, list_favorite_folders, set_folder_favorite, toggle_folder_favorite, index_folder, search_files, inspect_file, open_path_native])
+        .invoke_handler(tauri::generate_handler![list_recent_folders, list_favorite_folders, set_folder_favorite, toggle_folder_favorite, delete_indexed_folder, index_folder, search_files, inspect_file, open_path_native])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

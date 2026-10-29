@@ -33,6 +33,10 @@ File Indexer indexes a local folder recursively and lets you search files and di
 - Linux permissions and owner metadata;
 - native opening, location reveal, and absolute-path copying;
 - memory-conscious on-disk JSONL indexes and a bounded result list.
+- configurable result limits from 200 to 2,000 with a memory-use warning;
+- search across all folders retained in the local index history;
+- selectable Indigo, Ocean, Emerald, and Rose color palettes with light and dark variants;
+- safe removal of a local index without deleting the original folder or files.
 
 ## What makes File Indexer different?
 
@@ -55,7 +59,7 @@ This is a product-positioning comparison, not a performance benchmark. Search sp
 2. File Indexer walks that folder recursively without following symbolic links.
 3. It records file and directory metadata in a compact JSONL index stored in the application's local data directory.
 4. The Rust backend applies case-insensitive filtering, hidden-file rules, display-mode filters, and optional special-character normalization.
-5. The interface receives at most 200 matching rows at a time, keeping the result DOM bounded.
+5. The interface receives a bounded number of matching rows at a time (200 by default, configurable up to 2,000 with a memory warning), keeping the result DOM bounded.
 6. Selecting a result loads its metadata and only the limited preview required by the inspector. Binary files are not read entirely into memory by the indexer.
 
 The index can be reused when the same folder is opened again. A manual refresh performs a new scan when you need to update the index.
@@ -90,6 +94,10 @@ File Indexer is a local-first application. Indexed paths and preferences are sto
 | Search | Case-insensitive filename/path search with optional special-character normalization |
 | Index storage | Local JSONL files in the application data directory |
 | Result limit | 200 rows returned to the frontend per search |
+| Configurable result limit | 200-2,000 rows; higher values can increase memory usage |
+| Global search | Searches all folders retained in local index history |
+| Index removal | Removes only the local JSONL index, history entry, and favorite; never the original files |
+| Color palettes | Indigo, Ocean, Emerald, and Rose, each with light/dark styling |
 | Preview limits | Text preview is bounded; images and media use local asset URLs |
 | Network requirement | None at runtime |
 | Telemetry | None |
@@ -101,12 +109,12 @@ File Indexer is a local-first application. Indexed paths and preferences are sto
 
 Prebuilt `.deb` and `.rpm` packages are published manually in the [GitHub Releases](../../releases) section. They are intentionally not committed to this source repository.
 
-For each release, upload the packages matching the target architecture:
+For each release, upload the packages matching the target architecture. The source repository intentionally does not commit binary packages; attach them manually to the GitHub Release:
 
 | Package | Architecture | Example |
 |---|---|---|
-| Debian package | amd64 | `File Indexer_0.8.0_amd64.deb` |
-| RPM package | x86_64 | `File Indexer-0.8.0-1.x86_64.rpm` |
+| Debian package | amd64 | `File Indexer_0.8.8_amd64.deb` |
+| RPM package | x86_64 | `File Indexer-0.8.8-1.x86_64.rpm` |
 
 ARM64 packages, when available, should be uploaded with an explicit `arm64` or `aarch64` suffix. The source archive can also be attached to a Release:
 
@@ -127,6 +135,21 @@ For RPM-based distributions:
 ```bash
 sudo dnf install ./File-Indexer-<version>-1.x86_64.rpm
 ```
+
+### Version 0.8.8 release highlights
+
+- Added the **Remove indexed folder** action under the Index menu. It removes only File Indexer's local JSONL index, history entry, and favorite; it never deletes the selected folder or any file on disk.
+- Added **All indexes** search across the folders retained in local history, using sequential streaming reads and the same result cap.
+- Added configurable search result limits from 200 to 2,000 with an explicit memory-use warning.
+- Applied all color palettes consistently across the main application and Settings in both light and dark themes.
+- Added offline local profile artwork for the About panel.
+- Improved Settings scrolling, fixed navigation, palette controls, default reset confirmation, and Settings opening reliability.
+- Added PDF, audio, video, Linux permissions/owner metadata, favorites, list/grid views, and configurable shortcuts to the current feature set.
+
+Release assets for `v0.8.8`:
+
+- `File Indexer_0.8.8_amd64.deb`
+- `File Indexer-0.8.8-1.x86_64.rpm`
 
 ## Development
 

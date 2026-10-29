@@ -1,6 +1,6 @@
 [package]
 name = "file-indexer"
-version = "0.8.0"
+version = "0.8.8"
 description = "Index and search files locally"
 authors = ["File Indexer"]
 edition = "2021"
