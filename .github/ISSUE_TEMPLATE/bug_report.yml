@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible problem in File Indexer
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: File Indexer version
+      placeholder: "0.8.0"
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Linux distribution and desktop environment
+      placeholder: "Ubuntu 24.04 / GNOME"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Explain the smallest sequence that reproduces the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
