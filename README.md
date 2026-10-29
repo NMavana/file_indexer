@@ -34,9 +34,68 @@ File Indexer indexes a local folder recursively and lets you search files and di
 - native opening, location reveal, and absolute-path copying;
 - memory-conscious on-disk JSONL indexes and a bounded result list.
 
+## What makes File Indexer different?
+
+File Indexer is designed for the practical problem of searching a **messy, user-selected folder**: project directories, download folders, external drives, photo collections, archives, and mixed folders containing both files and subdirectories. It does not try to be a system-wide search daemon or a cloud document platform.
+
+| Application | Main approach | Best suited for | How File Indexer differs |
+|---|---|---|---|
+| **File Indexer** | On-demand recursive folder index, local JSONL cache, Rust-side search | A specific folder or workspace that needs fast, private searching | Focused scope, no cloud, no background watcher, and a desktop inspector for the selected result |
+| **FSearch** | Fast filename search using a local database | Broad filename lookup on Linux | File Indexer emphasizes selected-folder workflows, previews, favorites, and metadata |
+| **Catfish** | Desktop search front end using system search tools | Simple ad-hoc desktop searches | File Indexer maintains its own folder index and offers richer result inspection |
+| **Recoll** | Configurable desktop search with content indexing | Full-text search across large document collections | File Indexer currently focuses on names, paths, extensions, and filesystem metadata rather than building a full-text content index |
+| **Tracker / GNOME Search** | Desktop-integrated background indexing | System-wide desktop search and application integration | File Indexer is explicit and user-controlled: you choose which folder to index |
+| **KFind** | Graphical search by filesystem criteria | One-off searches using filters | File Indexer keeps a reusable folder history and search results in a dedicated index |
+
+This is a product-positioning comparison, not a performance benchmark. Search speed and memory usage depend on the filesystem, folder size, storage device, and enabled preview features.
+
+## How indexing and search work
+
+1. You choose a root folder from the native folder picker.
+2. File Indexer walks that folder recursively without following symbolic links.
+3. It records file and directory metadata in a compact JSONL index stored in the application's local data directory.
+4. The Rust backend applies case-insensitive filtering, hidden-file rules, display-mode filters, and optional special-character normalization.
+5. The interface receives at most 200 matching rows at a time, keeping the result DOM bounded.
+6. Selecting a result loads its metadata and only the limited preview required by the inspector. Binary files are not read entirely into memory by the indexer.
+
+The index can be reused when the same folder is opened again. A manual refresh performs a new scan when you need to update the index.
+
+### Does File Indexer watch folders with inotify, or rescan on a schedule?
+
+**Neither.** In the current version, File Indexer does **not** register an `inotify`/`fanotify` watcher and does **not** run a scheduled background rescan.
+
+Indexing is user-controlled:
+
+- the first scan happens when you choose a folder;
+- opening a folder from history can reuse its existing local index;
+- the **Re-index** action performs a fresh scan on demand;
+- no filesystem event stream, daemon, cloud service, or scheduled job runs in the background.
+
+This behavior is intentional: it keeps the application predictable, offline, and lighter on system resources. A future real-time watcher would be an opt-in feature and would be documented separately.
+
 ## Privacy
 
 File Indexer is a local-first application. Indexed paths and preferences are stored in the application's local data directory. File contents are not uploaded to a server.
+
+## Technical specifications
+
+| Area | Current behavior |
+|---|---|
+| Runtime | Tauri 2 desktop application |
+| Backend | Rust |
+| Frontend | TypeScript, Vite, HTML, and CSS |
+| Primary platform | 64-bit Linux |
+| Index scope | User-selected folder and its descendants |
+| Symlinks | Not followed during recursive indexing |
+| Search | Case-insensitive filename/path search with optional special-character normalization |
+| Index storage | Local JSONL files in the application data directory |
+| Result limit | 200 rows returned to the frontend per search |
+| Preview limits | Text preview is bounded; images and media use local asset URLs |
+| Network requirement | None at runtime |
+| Telemetry | None |
+| Cloud account | None |
+| Background watcher | Not currently used |
+| Scheduled scan | Not currently used |
 
 ## Installation
 
