@@ -5,10 +5,19 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-4f46e5.svg)](LICENSE)
 [![Tauri](https://img.shields.io/badge/Tauri-2-24c8db.svg)](https://tauri.app/)
 [![Platform](https://img.shields.io/badge/platform-Linux-111827.svg)](#supported-platform)
+[![Offline](https://img.shields.io/badge/offline-100%25-16a34a.svg)](#privacy)
+[![Cloud](https://img.shields.io/badge/cloud-none-0f172a.svg)](#privacy)
+[![Privacy](https://img.shields.io/badge/privacy-local--first-4f46e5.svg)](#privacy)
+[![Telemetry](https://img.shields.io/badge/telemetry-none-334155.svg)](#privacy)
 
 File Indexer indexes a local folder recursively and lets you search files and directories instantly. Everything stays on your computer: no account, telemetry, or remote upload is required.
 
 ![Settings preview](docs/assets/settings-preview.png)
+
+## Tags
+
+`offline` `no-cloud` `local-first` `privacy-first` `desktop-app` `tauri` `linux`
+`file-indexing` `file-search` `open-source` `deb` `rpm`
 
 ## Features
 
